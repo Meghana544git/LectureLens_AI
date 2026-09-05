@@ -1,0 +1,24 @@
+Today we will learn the software development life cycle, commonly called SDLC.
+The first stage is planning. In planning, the team identifies the problem,
+defines the goals, estimates resources, and creates a basic plan.
+
+The second stage is requirements analysis. Here the team gathers and documents
+what users and stakeholders need from the system.
+
+The third stage is design. The team decides how the system will be structured,
+including its architecture, database design, interfaces, and major components.
+
+The fourth stage is implementation. Developers write the actual source code
+based on the approved design.
+
+The fifth stage is testing. Testing checks whether the software works correctly,
+finds defects, and verifies that the requirements have been satisfied.
+
+The sixth stage is deployment. The completed software is released so users can
+access it.
+
+The final stage is maintenance. After deployment, developers fix bugs, improve
+the system, and make changes when requirements evolve.
+
+Remember the main sequence: planning, requirements analysis, design,
+implementation, testing, deployment, and maintenance.

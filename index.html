@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LectureLens AI — Personalized Study Notes</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #f6f8fc;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #667085;
+      --line: #e5e7eb;
+      --primary: #5b5bd6;
+      --primary-dark: #4747b9;
+      --soft: #eef0ff;
+      --highlight: #fff4bf;
+      --green: #e9f8ef;
+      --red: #fff0f0;
+      --shadow: 0 16px 45px rgba(20, 27, 52, .08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    header {
+      background: linear-gradient(135deg, #1d2140, #393b83);
+      color: white;
+      padding: 42px 20px 58px;
+    }
+
+    .header-inner, main {
+      max-width: 1120px;
+      margin: auto;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.13);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+
+    h1 {
+      margin: 15px 0 10px;
+      font-size: clamp(30px, 5vw, 50px);
+      line-height: 1.05;
+    }
+
+    .hero-text {
+      max-width: 720px;
+      color: #dfe2ff;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    main {
+      padding: 28px 20px 70px;
+      margin-top: -25px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .drop-zone {
+      border: 2px dashed #cfd3e8;
+      border-radius: 16px;
+      padding: 28px;
+      text-align: center;
+      min-height: 210px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: .2s;
+      background: #fafbff;
+    }
+
+    .drop-zone.dragover {
+      border-color: var(--primary);
+      background: var(--soft);
+    }
+
+    .drop-zone input { display: none; }
+
+    .upload-btn, button {
+      border: 0;
+      border-radius: 11px;
+      padding: 12px 17px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--primary);
+      color: white;
+    }
+
+    .upload-btn:hover, button:hover {
+      background: var(--primary-dark);
+    }
+
+    button.secondary {
+      background: #eef0f4;
+      color: var(--text);
+    }
+
+    button.secondary:hover { background: #e1e4ea; }
+
+    textarea {
+      width: 100%;
+      min-height: 210px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 15px;
+      font: inherit;
+      line-height: 1.6;
+      outline: none;
+    }
+
+    textarea:focus { border-color: var(--primary); }
+
+    .file-name, .muted {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 18px;
+    }
+
+    .status {
+      display: none;
+      padding: 13px 15px;
+      border-radius: 12px;
+      margin-top: 15px;
+      line-height: 1.5;
+    }
+
+    .status.show { display: block; }
+    .status.info { background: var(--soft); }
+    .status.error { background: var(--red); color: #9d2d2d; }
+    .status.success { background: var(--green); color: #20663b; }
+
+    #results { display: none; }
+
+    .title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    h2, h3 { margin-top: 0; }
+    h2 { font-size: 28px; }
+    h3 { margin-bottom: 8px; }
+
+    .overview {
+      font-size: 16px;
+      line-height: 1.75;
+      color: #3d4658;
+    }
+
+    .section {
+      border-top: 1px solid var(--line);
+      padding: 22px 0;
+    }
+
+    .section p, .section li, .definition p, .quiz-question {
+      line-height: 1.7;
+    }
+
+    ul { padding-left: 22px; }
+
+    .highlight-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .highlight {
+      background: var(--highlight);
+      border-left: 5px solid #e3bc28;
+      padding: 13px 15px;
+      border-radius: 8px;
+      line-height: 1.6;
+      font-weight: 600;
+    }
+
+    .definitions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 13px;
+    }
+
+    .definition {
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 17px;
+      background: #fbfcff;
+    }
+
+    .term {
+      font-weight: 800;
+      color: var(--primary-dark);
+      margin-bottom: 6px;
+    }
+
+    .diagram-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px;
+      background: white;
+    }
+
+    .quiz-card {
+      margin-top: 20px;
+    }
+
+    .quiz-item {
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      padding: 19px;
+      margin: 14px 0;
+    }
+
+    .question-number {
+      color: var(--primary);
+      font-weight: 800;
+      font-size: 13px;
+      margin-bottom: 7px;
+    }
+
+    .options {
+      display: grid;
+      gap: 9px;
+      margin-top: 13px;
+    }
+
+    .option {
+      border: 1px solid #dfe2e9;
+      padding: 11px 13px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .option:hover { background: #f7f8ff; }
+    .option input { margin-right: 8px; }
+
+    .feedback {
+      display: none;
+      margin-top: 13px;
+      padding: 12px;
+      border-radius: 10px;
+      line-height: 1.6;
+    }
+
+    .feedback.correct { display: block; background: var(--green); }
+    .feedback.wrong { display: block; background: var(--red); }
+
+    .answer-box {
+      width: 100%;
+      min-height: 90px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      font: inherit;
+      resize: vertical;
+    }
+
+    .score {
+      display: none;
+      padding: 16px;
+      background: var(--soft);
+      border-radius: 13px;
+      margin: 15px 0;
+      font-weight: 800;
+    }
+
+    .loading {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 3px solid #ddd;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      padding: 10px 20px 35px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 760px) {
+      .input-grid { grid-template-columns: 1fr; }
+      .card { padding: 18px; }
+    }
+
+    @media print {
+      header, .input-card, .quiz-card, footer, .no-print { display: none !important; }
+      body { background: white; }
+      main { margin-top: 0; padding: 0; max-width: none; }
+      .card { box-shadow: none; border: 0; }
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="header-inner">
+    <span class="badge">AI STUDY ASSISTANT</span>
+    <h1>LectureLens AI</h1>
+    <p class="hero-text">
+      Turn a lecture recording or transcript into structured notes, key definitions,
+      important highlights, visual process diagrams, and an interactive quiz.
+    </p>
+  </div>
+</header>
+
+<main>
+  <section class="card input-card">
+    <h2>1. Add your lecture</h2>
+
+    <div class="input-grid">
+      <div>
+        <div class="drop-zone" id="dropZone">
+          <div style="font-size:40px;">🎙️</div>
+          <h3>Upload lecture audio</h3>
+          <p class="muted">MP3, WAV, M4A, WEBM, MP4, MPEG — up to 50 MB</p>
+          <label class="upload-btn" for="audioInput">Choose audio</label>
+          <input id="audioInput" type="file" accept=".mp3,.wav,.m4a,.webm,.mp4,.mpeg,.mpga,audio/*">
+          <p class="file-name" id="fileName">No file selected</p>
+        </div>
+      </div>
+
+      <div>
+        <h3>Or paste transcript</h3>
+        <textarea id="transcript" placeholder="Paste your lecture transcript here..."></textarea>
+        <p class="muted">Tip: transcript input is fastest for a hackathon demo.</p>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="generateBtn">✨ Generate Study Notes</button>
+      <button class="secondary" id="clearBtn">Clear</button>
+    </div>
+
+    <div class="loading" id="notesLoading">
+      <span class="spinner"></span>
+      <span>Processing lecture and generating your study notes...</span>
+    </div>
+
+    <div class="status" id="status"></div>
+  </section>
+
+  <section id="results">
+    <div class="card">
+      <div class="title-row">
+        <div>
+          <h2 id="lectureTitle">Study Notes</h2>
+          <p class="overview" id="overview"></p>
+        </div>
+        <button class="secondary no-print" onclick="window.print()">🖨️ Export / Save PDF</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⭐ Important Points</h2>
+      <div class="highlight-list" id="highlights"></div>
+    </div>
+
+    <div class="card">
+      <h2>📚 Structured Notes</h2>
+      <div id="sections"></div>
+    </div>
+
+    <div class="card">
+      <h2>📖 Key Definitions</h2>
+      <div class="definitions" id="definitions"></div>
+    </div>
+
+    <div class="card" id="diagramCard" style="display:none;">
+      <h2>🔄 Visual Process / Flowchart</h2>
+      <p class="muted" id="diagramTitle"></p>
+      <div class="diagram-wrap">
+        <div class="mermaid" id="diagram"></div>
+      </div>
+    </div>
+
+    <div class="card quiz-card no-print">
+      <div class="title-row">
+        <div>
+          <h2>🧠 Quiz Me on This Lecture</h2>
+          <p class="muted">Test your recall immediately instead of only rereading the notes.</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <select id="difficulty" style="padding:12px;border:1px solid var(--line);border-radius:10px;">
+          <option value="easy">Easy — recall</option>
+          <option value="mixed" selected>Mixed</option>
+          <option value="hard">Hard — deeper concepts</option>
+        </select>
+        <select id="questionCount" style="padding:12px;border:1px solid var(--line);border-radius:10px;">
+          <option value="5">5 questions</option>
+          <option value="7" selected>7 questions</option>
+          <option value="10">10 questions</option>
+        </select>
+        <button id="quizBtn">Generate Quiz</button>
+      </div>
+
+      <div class="loading" id="quizLoading">
+        <span class="spinner"></span>
+        <span>Creating questions from your lecture...</span>
+      </div>
+
+      <div class="score" id="score"></div>
+      <div id="quiz"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  LectureLens AI • Built for the AI-generated personalized study notes hackathon problem
+</footer>
+
+<script>
+  mermaid.initialize({ startOnLoad: false, securityLevel: "loose" });
+
+  let currentNotes = null;
+  let currentQuiz = [];
+
+  const $ = (id) => document.getElementById(id);
+
+  function showStatus(message, type = "info") {
+    const box = $("status");
+    box.textContent = message;
+    box.className = "status show " + type;
+  }
+
+  function setLoading(id, visible) {
+    $(id).style.display = visible ? "flex" : "none";
+  }
+
+  $("audioInput").addEventListener("change", (e) => {
+    $("fileName").textContent = e.target.files[0]
+      ? e.target.files[0].name
+      : "No file selected";
+  });
+
+  const dropZone = $("dropZone");
+  ["dragenter", "dragover"].forEach(event => {
+    dropZone.addEventListener(event, (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
+  });
+
+  ["dragleave", "drop"].forEach(event => {
+    dropZone.addEventListener(event, (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+    });
+  });
+
+  dropZone.addEventListener("drop", (e) => {
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      $("audioInput").files = e.dataTransfer.files;
+      $("fileName").textContent = file.name;
+    }
+  });
+
+  $("clearBtn").addEventListener("click", () => {
+    $("audioInput").value = "";
+    $("fileName").textContent = "No file selected";
+    $("transcript").value = "";
+    $("results").style.display = "none";
+    $("status").className = "status";
+    currentNotes = null;
+    currentQuiz = [];
+  });
+
+  $("generateBtn").addEventListener("click", async () => {
+    const audio = $("audioInput").files[0];
+    const transcript = $("transcript").value.trim();
+
+    if (!audio && !transcript) {
+      showStatus("Please upload audio or paste a transcript first.", "error");
+      return;
+    }
+
+    const form = new FormData();
+    if (audio) form.append("audio", audio);
+    if (transcript) form.append("transcript", transcript);
+
+    setLoading("notesLoading", true);
+    $("generateBtn").disabled = true;
+    showStatus("Working on your lecture...", "info");
+
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        body: form
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || "Something went wrong.");
+
+      currentNotes = data.notes;
+      renderNotes(currentNotes);
+      $("results").style.display = "block";
+      showStatus("Your personalized study notes are ready!", "success");
+      window.scrollTo({ top: $("results").offsetTop - 20, behavior: "smooth" });
+    } catch (error) {
+      showStatus(error.message, "error");
+    } finally {
+      setLoading("notesLoading", false);
+      $("generateBtn").disabled = false;
+    }
+  });
+
+  function renderNotes(notes) {
+    $("lectureTitle").textContent = notes.title || "Study Notes";
+    $("overview").textContent = notes.overview || "";
+
+    $("highlights").innerHTML = (notes.highlights || [])
+      .map(x => `<div class="highlight">💡 ${escapeHtml(x)}</div>`)
+      .join("");
+
+    $("sections").innerHTML = (notes.sections || [])
+      .map(section => `
+        <div class="section">
+          <h3>${escapeHtml(section.heading || "Section")}</h3>
+          <p>${escapeHtml(section.summary || "")}</p>
+          <ul>
+            ${(section.points || []).map(point => `<li>${escapeHtml(point)}</li>`).join("")}
+          </ul>
+        </div>
+      `).join("");
+
+    $("definitions").innerHTML = (notes.definitions || []).length
+      ? notes.definitions.map(d => `
+          <div class="definition">
+            <div class="term">${escapeHtml(d.term || "")}</div>
+            <p>${escapeHtml(d.definition || "")}</p>
+          </div>
+        `).join("")
+      : `<p class="muted">No explicit definitions were identified in the lecture.</p>`;
+
+    const diagram = notes.diagram;
+    if (diagram && diagram.enabled && diagram.mermaid) {
+      $("diagramCard").style.display = "block";
+      $("diagramTitle").textContent = diagram.title || "Lecture process";
+      $("diagram").textContent = diagram.mermaid;
+      $("diagram").removeAttribute("data-processed");
+      mermaid.run({ nodes: [$("diagram")] }).catch(() => {
+        $("diagram").textContent = "The diagram could not be rendered for this lecture.";
+      });
+    } else {
+      $("diagramCard").style.display = "none";
+    }
+
+    $("quiz").innerHTML = "";
+    $("score").style.display = "none";
+  }
+
+  $("quizBtn").addEventListener("click", async () => {
+    if (!currentNotes) return;
+
+    setLoading("quizLoading", true);
+    $("quizBtn").disabled = true;
+
+    try {
+      const response = await fetch("/api/quiz", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          notes: currentNotes,
+          difficulty: $("difficulty").value,
+          count: Number($("questionCount").value)
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Quiz generation failed.");
+
+      currentQuiz = data.questions || [];
+      renderQuiz(currentQuiz);
+    } catch (error) {
+      showStatus(error.message, "error");
+    } finally {
+      setLoading("quizLoading", false);
+      $("quizBtn").disabled = false;
+    }
+  });
+
+  function renderQuiz(questions) {
+    $("score").style.display = "none";
+
+    $("quiz").innerHTML = questions.map((q, index) => {
+      if (q.type === "mcq") {
+        return `
+          <div class="quiz-item">
+            <div class="question-number">QUESTION ${index + 1} • MULTIPLE CHOICE</div>
+            <div class="quiz-question"><strong>${escapeHtml(q.question)}</strong></div>
+            <div class="options">
+              ${(q.options || []).map((option, oi) => `
+                <label class="option">
+                  <input type="radio" name="q${index}" value="${escapeAttr(option)}">
+                  ${escapeHtml(option)}
+                </label>
+              `).join("")}
+            </div>
+            <div class="feedback" id="feedback${index}"></div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="quiz-item">
+          <div class="question-number">QUESTION ${index + 1} • SHORT ANSWER</div>
+          <div class="quiz-question"><strong>${escapeHtml(q.question)}</strong></div>
+          <textarea class="answer-box" id="answer${index}" placeholder="Type your answer..."></textarea>
+          <div class="feedback" id="feedback${index}"></div>
+        </div>
+      `;
+    }).join("") + `
+      <button onclick="checkQuiz()">Check My Answers</button>
+    `;
+  }
+
+  window.checkQuiz = function() {
+    let correct = 0;
+
+    currentQuiz.forEach((q, index) => {
+      const feedback = $("feedback" + index);
+
+      if (q.type === "mcq") {
+        const selected = document.querySelector(`input[name="q${index}"]:checked`);
+        if (selected && normalize(selected.value) === normalize(q.answer)) {
+          correct++;
+          feedback.className = "feedback correct";
+          feedback.innerHTML = "✅ Correct! " + escapeHtml(q.explanation || "");
+        } else {
+          feedback.className = "feedback wrong";
+          feedback.innerHTML = "❌ Not quite. <strong>Correct answer:</strong> " +
+            escapeHtml(q.answer || "") + "<br>" + escapeHtml(q.explanation || "");
+        }
+      } else {
+        const answer = $("answer" + index).value.trim();
+        // For short answer, give credit when the student's response shares
+        // meaningful words with the expected answer.
+        const expectedWords = meaningfulWords(q.answer);
+        const studentWords = meaningfulWords(answer);
+        const overlap = expectedWords.filter(w => studentWords.includes(w)).length;
+        const ratio = expectedWords.length ? overlap / expectedWords.length : 0;
+
+        if (answer && (ratio >= 0.35 || normalize(answer) === normalize(q.answer))) {
+          correct++;
+          feedback.className = "feedback correct";
+          feedback.innerHTML = "✅ Looks correct. " + escapeHtml(q.explanation || "");
+        } else {
+          feedback.className = "feedback wrong";
+          feedback.innerHTML = "📝 Review this. <strong>Expected answer:</strong> " +
+            escapeHtml(q.answer || "") + "<br>" + escapeHtml(q.explanation || "");
+        }
+      }
+    });
+
+    const percent = currentQuiz.length
+      ? Math.round(correct / currentQuiz.length * 100)
+      : 0;
+
+    $("score").style.display = "block";
+    $("score").textContent =
+      `Your score: ${correct}/${currentQuiz.length} (${percent}%). ` +
+      (percent >= 80 ? "Great job! 🎉" :
+       percent >= 60 ? "Good work — review the missed points." :
+       "Keep practicing — reread the highlighted points and try again.");
+  };
+
+  function normalize(value) {
+    return String(value || "").toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+  }
+
+  function meaningfulWords(value) {
+    const stop = new Set(["the","a","an","and","or","is","are","was","were","to","of","in","on","for","with","that","this","it","as","by","from"]);
+    return [...new Set(normalize(value).split(" ").filter(w => w.length > 2 && !stop.has(w)))];
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function escapeAttr(value) {
+    return escapeHtml(value);
+  }
+</script>
+</body>
+</html>
